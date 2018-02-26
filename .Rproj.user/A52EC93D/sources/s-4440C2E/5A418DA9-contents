@@ -1,0 +1,8 @@
+dragUI("div4",tags$img(src = "avatar.jpg")),
+dropUI("div3",row_n = 2, col_n = 1)
+
+
+"/home/cecile/Images/bbbbb.jpg" %>%
+  image_read() %>%
+  image_scale(10) %>%
+  image_write(path = "/home/cecile/Images/bbbbb.jpg" )
