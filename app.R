@@ -4,6 +4,21 @@ library(shinyDND)
 library(magick)
 library(purrr)
 
+#fonctions
+
+#' animation de n images
+#' 
+#' @param src Les images à animer
+
+anim <- function(src, vitesse, taille ){
+  n <- length(src)
+  img <- src %>%
+    image_read() %>%
+    image_scale(taille) %>%
+    image_animate(fps = vitesse)
+  img
+}
+
 #UI
 ui <- dashboardPage(
   skin = "purple",
@@ -26,9 +41,22 @@ ui <- dashboardPage(
         uiOutput('images')
       ),
       mainPanel(
-        dropUI("div_drop",row_n = 2, col_n = 1)
-        
-        
+        tabsetPanel(
+          tabPanel("Animation",
+                   box(title = "Paramètres : ", width = 3,
+                       sliderInput("vitesse", label = "vitesse", min = 1, max = 20, value = 4),
+                       sliderInput("taille", label = "taille", min = 10, max = 2000, value = 400),
+                       actionButton("rotation", label = "Tourner")
+                       ),
+                   box(title = "Aperçu", width = 4,
+                       imageOutput("apercu_gif"),
+                       actionButton("save", label = "Enregistrer")
+                       )
+                   ),
+          tabPanel("Montage",
+                   dropUI("div_drop",row_n = 2, col_n = 1)
+                   )
+        )
       )
     )
   )
@@ -36,6 +64,7 @@ ui <- dashboardPage(
 
 # Define server 
 server <- function(input, output, session) {
+  options(shiny.maxRequestSize=30*1024^2) 
   output$files <- renderTable(input$files)
   
   files <- reactive({
@@ -68,9 +97,20 @@ server <- function(input, output, session) {
     div(image_output_list)
   })
   
+  output$apercu_gif <- renderImage({
+    req(input$files)
+    #gif
+    img <- anim(src = files()$datapath, vitesse = input$vitesse, taille = input$taille)
+    tmpfile <- img %>%
+      image_write(tempfile(fileext='gif'), format = 'gif')
+    # Return a list
+    list(src = tmpfile, contentType = "image/gif")
+  })
   
   observe({
     req(input$files)
+    
+    #apercus images
     map(1:nrow(files()), ~ {
 
       imagename = paste0("image", .x)
@@ -81,6 +121,7 @@ server <- function(input, output, session) {
       }, deleteFile = FALSE)
       
     })
+    
     
   })
 }
